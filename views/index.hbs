@@ -1,0 +1,14 @@
+<div class="container">
+    <h1>Now Playing</h1>
+    <div>
+        <p><strong id="now_playing">{{track}}</strong></p>
+    </div>
+</div>
+
+<script type="text/javascript">
+var socket = io.connect("http://localhost:3000");
+socket.on('now playing', function(data) {
+    var el = document.getElementById("now_playing");
+    el.innerHTML = data.track;
+});
+</script>

@@ -1,0 +1,1 @@
+A quick Express app that periodically polls iTunes via AppleScript and if it's a different song from the last poll, it publishes the change to clients via Socket.IO.
