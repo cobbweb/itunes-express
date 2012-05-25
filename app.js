@@ -38,7 +38,7 @@ app.configure('development', function(){
 
 app.get('/', function(req, res){
   getNowPlaying(function(np) {
-    res.render('index', { track: np });
+    res.render('index', { track: np, host: req.headers.host });
   });
 });
 
@@ -47,17 +47,19 @@ console.log("Express server listening on port 3000");
 
 io = sio.listen(server);
 
-var lastNowPlaying;
-getNowPlaying(function(np) {
-  lastNowPlaying = np;
-  io.sockets.emit('now playing', { track: np });
-});
-
-setInterval(function() {
+io.on('connection', function(socket) {
+  var lastNowPlaying;
   getNowPlaying(function(np) {
-    if (np !== lastNowPlaying) {
-      lastNowPlaying = np;
-      io.sockets.emit('now playing', { track: np });
-    }
+    lastNowPlaying = np;
+    io.sockets.emit('now playing', { track: np });
   });
-}, 500);
+
+  setInterval(function() {
+    getNowPlaying(function(np) {
+      if (np !== lastNowPlaying) {
+        lastNowPlaying = np;
+        io.sockets.emit('now playing', { track: np });
+      }
+    });
+  }, 500);
+})
