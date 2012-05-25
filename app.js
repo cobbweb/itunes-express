@@ -47,19 +47,17 @@ console.log("Express server listening on port 3000");
 
 io = sio.listen(server);
 
-io.sockets.on('connection', function(socket) {
-  var lastNowPlaying;
-  getNowPlaying(function(np) {
-    lastNowPlaying = np;
-    socket.emit('now playing', { track: np });
-  });
-
-  setInterval(function() {
-    getNowPlaying(function(np) {
-      if (np !== lastNowPlaying) {
-        lastNowPlaying = np;
-        socket.emit('now playing', { track: np });
-      }
-    });
-  }, 500);
+var lastNowPlaying;
+getNowPlaying(function(np) {
+  lastNowPlaying = np;
+  io.sockets.emit('now playing', { track: np });
 });
+
+setInterval(function() {
+  getNowPlaying(function(np) {
+    if (np !== lastNowPlaying) {
+      lastNowPlaying = np;
+      io.sockets.emit('now playing', { track: np });
+    }
+  });
+}, 500);
