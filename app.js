@@ -3,63 +3,63 @@
  * Module dependencies.
  */
 
-var express = require('express'),
-    http = require('http'),
-    applescript = require('applescript'),
-    sio = require('socket.io');
-
-var app = express();
+var express     = require('express')
+var http        = require('http')
+var applescript = require('applescript')
+var sio         = require('socket.io')
+var fs          = require('fs')
+var _           = require('underscore')
+var app         = express()
 
 var getNowPlaying = function(cb) {
-    var script = [
-      'tell application "iTunes"',
-      '\t(artist of current track) & " - " & (name of current track)',
-      'end tell'
-    ].join("\n");
+  var script = [
+    'tell application "iTunes"',
+    '\t(artist of current track) & " - " & (name of current track)',
+    'end tell'
+  ].join("\n");
 
-    applescript.execString(script, function(err, result) {
-      cb(result);
-    });
+  applescript.execString(script, function(err, result) {
+    cb(result);
+  });
 };
 
-app.configure(function(){
-  app.set('views', __dirname + '/views');
-  app.set('view engine', 'hbs');
-  app.use(express.favicon());
-  app.use(express.logger('dev'));
-  app.use(express.bodyParser());
-  app.use(express.methodOverride());
-  app.use(app.router);
-});
+app.configure(function() {
+  app.use(express.favicon())
+  app.use(express.logger('dev'))
+  app.use(express.bodyParser())
+  app.use(express.methodOverride())
+  app.use(app.router)
+  app.use(express.errorHandler())
+})
 
-app.configure('development', function(){
-  app.use(express.errorHandler());
-});
-
-app.get('/', function(req, res){
+app.get('*', function(req, res) {
   getNowPlaying(function(np) {
-    res.render('index', { track: np, host: req.headers.host });
-  });
-});
+    fs.readFile('./index.html', 'utf-8', function(err, template) {
+      var _template = _.template(template)
+      var html = _template({ track: np, host: req.headers.host })
+      res.send(html)
+    })
+  })
+})
 
-var server = http.createServer(app).listen(3000);
-console.log("Express server listening on port 3000");
+var server = http.createServer(app).listen(3000)
+console.log("Express server listening on port 3000")
 
-io = sio.listen(server);
+io = sio.listen(server)
 
 io.on('connection', function(socket) {
-  var lastNowPlaying;
+  var lastNowPlaying
   getNowPlaying(function(np) {
-    lastNowPlaying = np;
-    io.sockets.emit('now playing', { track: np });
-  });
+    lastNowPlaying = np
+    io.sockets.emit('now playing', { track: np })
+  })
 
   setInterval(function() {
     getNowPlaying(function(np) {
       if (np !== lastNowPlaying) {
-        lastNowPlaying = np;
-        io.sockets.emit('now playing', { track: np });
+        lastNowPlaying = np
+        io.sockets.emit('now playing', { track: np })
       }
-    });
-  }, 500);
+    })
+  }, 500)
 })
